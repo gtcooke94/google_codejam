@@ -167,15 +167,15 @@ def JudgeAllCases(test_number, io):
   Returns:
     An error string, or None if the attempt was correct.
   """
-  b = (10, 20, 100)[test_number]
+  b = (10,20,100)[test_number]
   inputs = GenerateInputs(b)
-  inputs[0] = "1000101100"
 
   io.PrintOutput('{} {}'.format(NUM_CASES, b))
   for case_number in range(NUM_CASES):
     single_case = JudgeSingleCase(io, inputs[case_number])
     err = single_case.Judge()
     if err is not None:
+      print("WRONG:", inputs[case_number], file=open("wrong.txt", "w+"))
       return 'Case #{} fails:\n{}'.format(case_number + 1, err)
 
   # Make sure nothing other than EOF is printed after all cases finish.

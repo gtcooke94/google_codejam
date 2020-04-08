@@ -1,12 +1,23 @@
+
+""" Old case differentiation. Doesn't work for 100, happens 14 times.
+Worse case 14 * 4 useless queries = 56 => 150 - 56 < 100, so we can't get all info
+BUT, new method can find what case happened with 2 queries
+
+Turns out, we know if our pair equidistant from center was a match or mismatch.
+Knowing that, we can use this exact method, but use half the queries. If we know it's a match, then we can do query one of the two to figure out if there was a compliment.
+Then, if we know there's a mismatch, we can query one of the two to figure out if there was a reverse
+"""
+
+
 import sys
 import time
 from copy import copy
 
-output_file = open("temp.txt", "w")
+#  output_file = open("temp.txt", "w")
 
 inp = input()
 cases, arr_size = (int(i) for i in inp.split())
-print(cases, arr_size, file=output_file)
+#  print(cases, arr_size, file=output_file)
 
 #  print(3)
 #  sys.stdout.flush()
@@ -88,82 +99,80 @@ def deduce_and_edit(arr, known_until):
 
     # this query will initiate the flip
     new_low_val = query(low)
-    match_inds = (None, None)
-    mismatch_inds = (None, None)
-    newmatch0, newmismatch0 = None, None
+    new_high_val = query(high)
+    query_count = 2
 
     if lowval == highval:
         # Go until we find a known mismatch or we don't know further
-        match_inds = (low, high)
-        newmatch0 = new_low_val
         for i in range(low + 1, known_until + 1):
             if arr[i] != arr[len(arr) + 1 - i]:
                 midlow = i
                 midhigh = len(arr) + 1 - i
                 midlowval = arr[midlow]
                 midhighval = arr[midhigh]
-                mismatch_inds = (midlow, midhigh)
                 break
     else:
-        mismatch_inds = (low, high)
-        newmismatch0 = new_low_val
         for i in range(low + 1, known_until + 1):
             if arr[i] == arr[len(arr) + 1 - i]:
                 midlow = i
                 midhigh = len(arr) + 1 - i
                 midlowval = arr[midlow]
                 midhighval = arr[midhigh]
-                match_inds = (midlow, midhigh)
                 break
 
     if not midlow:
         # We don't know exactly what happened, but it doesn't matter.
-        if lowval == highval and lowval != newmatch0:
-            # Only have matches
+        if lowval == highval and lowval != new_low_val:
             # Case 1 or 3, compliment your array
             arr.compliment()
             # else Case 2 or 4, do nothing
-        elif lowval != highval and lowval != newmismatch0:
-            # Only have mismatches
+        elif lowval != highval and lowval != new_low_val:
             # Case 1 or 2, compliment your array
             arr.compliment()
             # else case 3 or 4, do nothing
-        # Do an extra query to keep things consistent
-        query(1)
-        return 2
 
     #  print("120:", low, lowval, high, highval, midlow, midlowval, midhigh, midhighval, file=output_file)
     if midlow:
-        # If  there is a match and a mismatch get the values
-        if newmatch0 is not None:
-            newmismatch0 = query(mismatch_inds[0])
-        else:
-            newmatch0 = query(match_inds[0])
+        soln_arr = Ind1Arr(4)
+        soln_arr[1] = new_low_val
+        soln_arr[2] = query(midlow)
+        soln_arr[3] = query(midhigh)
+        soln_arr[4] = new_high_val
+        test_arr = Ind1Arr(4)
+        test_arr[1] = lowval
+        test_arr[2] = midlowval
+        test_arr[3] = midhighval
+        test_arr[4] = highval
+        query_count = 4
+        #  print("soln_arr: ", soln_arr, file=output_file)
+        #  print("test_arr: ", test_arr, file=output_file)
 
-        print("137: ", match_inds[0], newmatch0, mismatch_inds[0], newmismatch0, file=output_file)
-            
-
-        compliment = False
-        reversal = False
-
-        if arr[match_inds[0]] != newmatch0:
-            # A compliment has to have happened
-            compliment = True
-            if arr[mismatch_inds[0]] == newmismatch0:
-                # If a compliment happened, but the mismatch is still the same, a reversal happened as well
-                reversal = True
-        else:
-            # A compliment did not happen
-            if arr[mismatch_inds[0]] != newmismatch0:
-                # A compliment did not happen, but the mismatch is different. A reversal happened
-                reversal = True
-
-        if compliment:
+        # Case 1 - compliment?
+        test_arr.compliment()
+        if test_arr == soln_arr:
             arr.compliment()
-        if reversal:
-            arr.reverse()
+            return query_count
+        test_arr.compliment()
 
-    return 2
+        # Case 2 - reverse?
+        test_arr.reverse()
+        if test_arr == soln_arr:
+            arr.reverse()
+            return query_count
+        test_arr.reverse()
+
+        # Case 3 - both?
+        test_arr.reverse()
+        test_arr.compliment()
+        if test_arr == soln_arr:
+            arr.reverse()
+            arr.compliment()
+            return query_count
+        test_arr.compliment()
+        test_arr.reverse()
+
+        # Case 4 do nothing
+    return query_count
 
 
 for case in range(1, cases + 1):
@@ -173,9 +182,9 @@ for case in range(1, cases + 1):
     # first query is "free"
     # don't use it for now
     for low in range(1, arr_size + 1):
+        #  print(arr, file=output_file)
         high = arr_size + 1 - low
-        print(arr, file=output_file)
-        print(low, high, query_count, file=output_file)
+        #  print(low, high, query_count, file=output_file)
         arr[low] = query(low)
         arr[high] = query(high)
         known_until = low
